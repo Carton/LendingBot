@@ -274,6 +274,8 @@ def get_frr_or_min_daily_rate(cur):
         frrasmin = Config.getboolean('BOT', 'frrasmin', False)
         frrdelta = Decimal(Config.get('BOT', 'frrdelta', 0.0000))
 
+    log.log("Using frrasmin {0} for {1}".format(frrasmin, cur))
+    log.log("Using frrdelta {0}% for {1}".format(frrdelta * 100, cur))
     if exchange == 'BITFINEX' and frrasmin:
         frr_rate = Decimal(api.get_frr(cur)) + frrdelta
         if frr_rate > min_daily_rate:
