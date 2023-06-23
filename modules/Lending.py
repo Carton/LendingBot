@@ -246,6 +246,8 @@ def lend_all():
             if "rawbtc" in cur1:
                 ticker = api.return_ticker()
             break
+    log.log("Lending balances: " + str(lending_balances))
+    log.log("All currencies: " + str(all_currencies))
     try:
         for cur in lending_balances:
             if cur in all_currencies:

@@ -30,7 +30,7 @@ class Bitfinex(ExchangeApi):
         self.symbols = []
         self.ticker = {}
         self.tickerTime = 0
-	self.baseCurrencies = ['USD', 'BTC', 'ETH']
+        self.baseCurrencies = ['USD', 'BTC', 'ETH']
         self.all_currencies = self.cfg.get_all_currencies()
         self.usedCurrencies = []
         self.timeout = int(self.cfg.get("BOT", "timeout", 30, 1, 180))
@@ -71,6 +71,10 @@ class Bitfinex(ExchangeApi):
             "Connection": "close"
         }
 
+    def debug_log(self, msg):
+        if self.api_debug_log:
+            self.log.log(msg)
+
     def _request(self, method, request, payload=None, verify=True):
         try:
 
@@ -78,8 +82,10 @@ class Bitfinex(ExchangeApi):
             url = '{}{}'.format(self.url, request)
             if method == 'get':
                 r = requests.get(url, timeout=self.timeout, headers={'Connection': 'close'})
+                self.debug_log("GET: {}".format(url))
             else:
                 r = requests.post(url, headers=payload, verify=verify, timeout=self.timeout)
+                self.debug_log("POST: {} headers={}".format(url, payload))
 
             if r.status_code != 200:
                 if r.status_code == 502 or r.status_code in range(520, 527, 1):
@@ -91,6 +97,7 @@ class Bitfinex(ExchangeApi):
 
             # Check in case something has gone wrong and the timer is too big
             self.reset_request_timer()
+            self.debug_log("Response: {}".format(r.text))
             return r.json()
 
         except Exception as ex:
