@@ -318,10 +318,29 @@ def construct_order_book(active_cur):
     for offer in loans['offers']:
         rate_book.append(offer['rate'])
         volume_book.append(offer['amount'])
-    return {'rates': rate_book, 'volumes': volume_book}
+    resp = {'rates': rate_book, 'volumes': volume_book}
+    print("DEBUG: construct_order_book: " + str(resp))
+    return resp
 
 
 def get_gap_rate(active_cur, gap, order_book, cur_total_balance, raw=False):
+    """
+    Calculates the gap rate for a given active currency.
+
+    Args:
+        active_cur (str): The active currency.
+        gap (float): The gap value.
+        order_book (dict): The order book containing volumes and rates.
+        cur_total_balance (Decimal): The current total balance.
+        raw (bool, optional): Whether to use the raw gap value. Defaults to False.
+
+    Returns:
+        float: The calculated gap rate.
+
+    Raises:
+        StopIteration: If there are not enough offers in the response.
+
+    """
     if raw:
         gap_expected = gap
     else:
@@ -379,7 +398,9 @@ def construct_orders(cur, cur_active_bal, cur_total_balance, ticker):
     remainder = cur_active_bal - sum(new_order_amounts)
     if remainder > 0:  # If truncating causes remainder, add that to first order.
         new_order_amounts[0] += remainder
-    return {'amounts': new_order_amounts, 'rates': new_order_rates}
+    resp = {'amounts': new_order_amounts, 'rates': new_order_rates}
+    print('DEBUG: Constructing orders: ' + str(resp))
+    return resp
 
 
 def get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker):
@@ -424,6 +445,7 @@ def get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker):
             gap_bottom_default = 10
             gap_top_default = 200
         return get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker)  # Start over with new defaults
+    print("DEBUG: gap_mode: " + gap_mode + ", top_rate: " + str(top_rate) + ", bottom_rate: " + str(bottom_rate))
     return [Decimal(top_rate), Decimal(bottom_rate)]
 
 
