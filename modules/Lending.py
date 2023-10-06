@@ -42,9 +42,17 @@ exchange = None
 frrasmin = False
 frrdelta = 0.0
 
+debug_on = False
+lending_paused = False
+
 # limit of orders to request
 loanOrdersRequestLimit = {}
 defaultLoanOrdersRequestLimit = 100
+
+
+def debug_log(msg):
+    if debug_on:
+        print('DEBUG: ' + msg)
 
 
 def init(cfg, api1, log1, data, maxtolend, dry_run1, analysis, notify_conf1):
@@ -319,7 +327,7 @@ def construct_order_book(active_cur):
         rate_book.append(offer['rate'])
         volume_book.append(offer['amount'])
     resp = {'rates': rate_book, 'volumes': volume_book}
-    print("DEBUG: construct_order_book: " + str(resp))
+    debug_log("Construct_order_book: " + str(resp))
     return resp
 
 
@@ -399,7 +407,7 @@ def construct_orders(cur, cur_active_bal, cur_total_balance, ticker):
     if remainder > 0:  # If truncating causes remainder, add that to first order.
         new_order_amounts[0] += remainder
     resp = {'amounts': new_order_amounts, 'rates': new_order_rates}
-    print('DEBUG: Constructing orders: ' + str(resp))
+    debug_log('Constructing orders: ' + str(resp))
     return resp
 
 
@@ -445,7 +453,7 @@ def get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker):
             gap_bottom_default = 10
             gap_top_default = 200
         return get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker)  # Start over with new defaults
-    print("DEBUG: gap_mode: " + gap_mode + ", top_rate: " + str(top_rate) + ", bottom_rate: " + str(bottom_rate))
+    debug_log("gap_mode: " + gap_mode + ", top_rate: " + str(top_rate) + ", bottom_rate: " + str(bottom_rate))
     return [Decimal(top_rate), Decimal(bottom_rate)]
 
 

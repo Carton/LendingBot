@@ -460,6 +460,21 @@ function bsNavbarBugWorkaround() {
     });
 }
 
+function handle_pause_button() {
+    $('#pauseButton').click(function() {
+        var buttonText = $('#pauseButton').text().trim(); // 使用trim()来移除任何额外的空格
+        if (buttonText == 'Pause Lending') {
+            $.get('/pause_lending', function() {
+                $('#pauseButton').html('<i class="fas fa-play"></i> Resume Lending'); // 使用html()来同时更新图标和文字
+            });
+        } else {
+            $.get('/resume_lending', function() {
+                $('#pauseButton').html('<i class="fas fa-pause"></i> Pause Lending');
+            });
+        }
+    });
+}
+
 $(document).ready(function () {
     toastr.options = {
         "positionClass": "toast-top-center"
@@ -467,4 +482,5 @@ $(document).ready(function () {
 
     update();
     bsNavbarBugWorkaround();
+    handle_pause_button();
 });

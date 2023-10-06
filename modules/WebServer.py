@@ -2,6 +2,8 @@
 import threading
 import os
 
+import modules.Lending as Lending
+
 server = None
 web_server_ip = "0.0.0.0"
 web_server_port = "8000"
@@ -70,6 +72,20 @@ def start_web_server():
                     self.send_error(404, "These aren't the droids you're looking for")
                     return None
                 return SimpleHTTPServer.SimpleHTTPRequestHandler.send_head(self)
+
+            def do_GET(self):
+                if self.path == '/pause_lending':
+                    Lending.lending_paused = True
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'Lending paused')
+                elif self.path == '/resume_lending':
+                    Lending.lending_paused = False
+                    self.send_response(200)
+                    self.end_headers()
+                    self.wfile.write(b'Lending resumed')
+                else:
+                    return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 
         global server
         SocketServer.TCPServer.allow_reuse_address = True

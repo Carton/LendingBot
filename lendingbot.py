@@ -108,11 +108,15 @@ try:
         try:
             dns_cache = {}  # Flush DNS Cache
             Data.update_conversion_rates(output_currency, json_output_enabled)
-            PluginsManager.before_lending()
-            Lending.transfer_balances()
-            Lending.cancel_all()
-            Lending.lend_all()
-            PluginsManager.after_lending()
+            if not Lending.lending_paused:
+                log.log('Lending running')
+                PluginsManager.before_lending()
+                Lending.transfer_balances()
+                Lending.cancel_all()
+                Lending.lend_all()
+                PluginsManager.after_lending()
+            else:
+                log.log('Lending paused')
             log.refreshStatus(Data.stringify_total_lent(*Data.get_total_lent()),
                               Data.get_max_duration(end_date, "status"))
             log.persistStatus()
