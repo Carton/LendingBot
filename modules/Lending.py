@@ -42,6 +42,7 @@ exchange = None
 frrasmin = False
 frrdelta = 0.0
 
+frrdelta_cur_step = 0
 debug_on = False
 lending_paused = False
 last_lending_status = None
@@ -274,14 +275,22 @@ def get_frr_or_min_daily_rate(cur):
     :param cur: The currency which to check
     :return: The better of the two rates (FRR and min daily rate)
     """
+    global frrdelta_cur_step
     if cur in coin_cfg:
         min_daily_rate = Decimal(coin_cfg[cur]['minrate'])
         frrasmin = coin_cfg[cur]['frrasmin']
-        frrdelta = Decimal(coin_cfg[cur]['frrdelta']) / 100
+        frrdelta_min = Decimal(coin_cfg[cur]['frrdelta']) / 100
     else:
         min_daily_rate = Decimal(Config.get("BOT", "mindailyrate", None, 0.003, 5)) / 100
         frrasmin = Config.getboolean('BOT', 'frrasmin', False)
-        frrdelta = Decimal(Config.get('BOT', 'frrdelta', 0.0000))
+        frrdelta_min = Decimal(Config.get('BOT', 'frrdelta', 0.0000))
+
+    frrdelta_steps = int(Config.get('BOT', 'frrdelta_steps', 5))
+    frrdelta_step = Decimal(Config.get('BOT', 'frrdelta_step', 0.0001))
+    if frrdelta_cur_step > frrdelta_steps:
+        frrdelta_cur_step = 0
+    frrdelta = frrdelta_min + (frrdelta_step * frrdelta_cur_step)
+    frrdelta_cur_step += 1
 
     log.log("Using frrasmin {0} for {1}".format(frrasmin, cur))
     log.log("Using frrdelta {0}% for {1}".format(frrdelta * 100, cur))
@@ -306,6 +315,7 @@ def get_min_daily_rate(cur):
             coin_cfg_alerted[cur] = True
             log.log('Using custom mindailyrate ' + str(cur_min_daily_rate * 100) + '% for ' + cur)
     if Analysis and cur in currencies_to_analyse:
+        # TODO: 这里看下建议的 rate 是怎么来的？
         recommended_min = Analysis.get_rate_suggestion(cur, method=analysis_method)
         if cur_min_daily_rate < recommended_min:
             log.log("Using {0} as mindailyrate {1}% for {2}".format(analysis_method, recommended_min * 100, cur))
