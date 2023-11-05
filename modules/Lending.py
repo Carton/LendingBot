@@ -44,6 +44,7 @@ frrdelta = 0.0
 
 debug_on = False
 lending_paused = False
+last_lending_status = None
 
 # limit of orders to request
 loanOrdersRequestLimit = {}
