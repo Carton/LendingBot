@@ -1,6 +1,7 @@
 # coding=utf-8
 import threading
 import os
+import json
 
 import modules.Lending as Lending
 
@@ -84,6 +85,11 @@ def start_web_server():
                     self.send_response(200)
                     self.end_headers()
                     self.wfile.write(b'Lending resumed')
+                elif self.path == '/get_status':
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"lending_paused": Lending.lending_paused}))
                 else:
                     return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
 

@@ -460,18 +460,25 @@ function bsNavbarBugWorkaround() {
     });
 }
 
+function updateButtonStatus(isPaused) {
+    var buttonHtml = isPaused ? '<i class="fas fa-play"></i> Resume Lending' : '<i class="fas fa-pause"></i> Pause Lending';
+    $('#pauseButton').html(buttonHtml);
+}
+
 function handle_pause_button() {
+    // 查询当前的状态
+    $.get('/get_status', function(data) {
+        console.log(data.lending_paused);
+        updateButtonStatus(data.lending_paused);
+    });
+
     $('#pauseButton').click(function() {
-        var buttonText = $('#pauseButton').text().trim(); // 使用trim()来移除任何额外的空格
-        if (buttonText == 'Pause Lending') {
-            $.get('/pause_lending', function() {
-                $('#pauseButton').html('<i class="fas fa-play"></i> Resume Lending'); // 使用html()来同时更新图标和文字
-            });
-        } else {
-            $.get('/resume_lending', function() {
-                $('#pauseButton').html('<i class="fas fa-pause"></i> Pause Lending');
-            });
-        }
+        var isPaused = $('#pauseButton').text().trim() == 'Resume Lending';
+        var url = isPaused ? '/resume_lending' : '/pause_lending';
+
+        $.get(url, function() {
+            updateButtonStatus(!isPaused);
+        });
     });
 }
 
