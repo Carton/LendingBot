@@ -392,6 +392,10 @@ function loadSettings() {
     timespanNames.forEach(function(t) {
         $('input[data-timespan="' + t + '"]').prop('checked', true);
     });
+
+    // frrdelta_min
+    var frrdelta_min = localStorage.getItem('frrdelta_min') || 0.00001;
+    $('#frrdelta_min').val(frrdelta_min);
 }
 
 function doSave() {
@@ -431,6 +435,14 @@ function doSave() {
     if(validEffRateModes.indexOf(localStorage.effRateMode) !== -1) {
         effRateMode = localStorage.effRateMode;
     }
+
+    var frrdelta_min = $('#frrdelta_min').val()
+    if(frrdelta_min < -0.003 || frrdelta_min > 0.003) {
+        alert('Please input a value between -0.003 and 0.003 for frrdelta_min')
+        return false
+    }
+    localStorage.setItem('frrdelta_min', frrdelta_min);
+    setConfig({ "frrdelta_min": frrdelta_min });
 
     toastr.success("Settings saved!");
     $('#settings_modal').modal('hide');
@@ -479,6 +491,21 @@ function handle_pause_button() {
         $.get(url, function() {
             updateButtonStatus(!isPaused);
         });
+    });
+}
+
+function setConfig(config) {
+    $.ajax({
+        url: '/set_config',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(config),
+        success: function(response) {
+            console.log(response);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error setting config:", error);
+        }
     });
 }
 

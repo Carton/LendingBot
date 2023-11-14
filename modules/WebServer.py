@@ -2,6 +2,8 @@
 import threading
 import os
 import json
+from decimal import Decimal
+from decimal import InvalidOperation
 
 import modules.Lending as Lending
 
@@ -92,6 +94,30 @@ def start_web_server():
                     self.wfile.write(json.dumps({"lending_paused": Lending.lending_paused}))
                 else:
                     return SimpleHTTPServer.SimpleHTTPRequestHandler.do_GET(self)
+
+            def do_POST(self):
+                if self.path == '/set_config':
+                    content_length = int(self.headers['Content-Length'])  # 获取数据长度
+                    post_data = self.rfile.read(content_length)  # 读取POST数据
+                    config_data = json.loads(post_data)
+
+                    # 更新配置值
+                    if 'frrdelta_min' in config_data:
+                        try:
+                            Lending.frrdelta_min = Decimal(config_data['frrdelta_min'])
+                            response = {"success": True, "frrdelta_min": str(Lending.frrdelta_min)}
+                        except (ValueError, TypeError, InvalidOperation) as e:
+                            response = {"success": False, "error": str(e)}
+                    else:
+                        response = {"success": False, "error": "Invalid configuration key"}
+
+                    # 发送响应
+                    self.send_response(200 if response["success"] else 400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps(response))
+                else:
+                    self.send_error(404, "File not found")
 
         global server
         SocketServer.TCPServer.allow_reuse_address = True
