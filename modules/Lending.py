@@ -305,7 +305,7 @@ def get_frr_or_min_daily_rate(cur):
     if exchange == 'BITFINEX' and frrasmin:
         frr_rate = Decimal(api.get_frr(cur)) + frrdelta
         if frr_rate > min_daily_rate:
-            log.log("Using FRR as mindailyrate {0}% for {1}".format(frr_rate * 100, cur))
+            log.log("Using FRR as mindailyrate {:.6f}% for {}".format(frr_rate * 100, cur))
             return frr_rate
 
     return min_daily_rate

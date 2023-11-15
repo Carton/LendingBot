@@ -109,18 +109,21 @@ def update_conversion_rates(output_currency, json_output_enabled):
                     log.updateOutputCurrency('currency', output_currency)
         if not output_currency_found:  # fetch output currency rate from blockchain.info
             url = "https://blockchain.info/tobtc?currency={0}&value=1".format(output_currency)
+        try:
+            response = urlopen(url).read()
             try:
-                highest_bid = json.loads(urlopen(url).read())
+                highest_bid = json.loads(response)
                 log.updateOutputCurrency('highestBid', 1 / float(highest_bid))
                 log.updateOutputCurrency('currency', output_currency)
             except ValueError:
-                log.log_error("Failed to find the exchange rate for outputCurrency {0}! Using BTC as output currency"
-                              .format(output_currency))
-                log.log_error("Make sure that {0} is either traded on the exchange or supported by blockchain.info: {1}"
-                              .format(output_currency, "https://blockchain.info/api/exchange_rates_api"))
-            except Exception:
-                log.log_error("Can't connect to {0} using BTC as the output currency".format(url))
-
+                try:
+                    highest_bid = response.decode('utf-8')
+                    log.updateOutputCurrency('highestBid', 1 / float(highest_bid))
+                    log.updateOutputCurrency('currency', output_currency)
+                except ValueError:
+                    log.log_error("Failed to decode response as plain text or JSON")
+        except Exception:
+            log.log_error("Can't connect to {0} using BTC as the output currency".format(url))
 
 def get_lending_currencies():
     currencies = []

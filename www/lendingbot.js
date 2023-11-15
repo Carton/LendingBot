@@ -480,7 +480,6 @@ function updateButtonStatus(isPaused) {
 function handle_pause_button() {
     // 查询当前的状态
     $.get('/get_status', function(data) {
-        console.log(data.lending_paused);
         updateButtonStatus(data.lending_paused);
     });
 
