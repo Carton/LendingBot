@@ -211,6 +211,8 @@ def cancel_all():
     loan_offers = api.return_open_loan_offers()
     available_balances = api.return_available_account_balances('lending')
     for CUR in loan_offers:
+        if CUR not in coin_cfg:
+            continue
         if CUR in coin_cfg and coin_cfg[CUR]['maxactive'] == 0:
             # don't cancel disabled coin
             continue
@@ -324,8 +326,8 @@ def get_min_daily_rate(cur):
         # TODO: 这里看下建议的 rate 是怎么来的？
         recommended_min = Analysis.get_rate_suggestion(cur, method=analysis_method)
         if cur_min_daily_rate < recommended_min:
-            log.log("Using {0} as mindailyrate {1}% for {2}".format(analysis_method, recommended_min * 100, cur))
-            cur_min_daily_rate = recommended_min
+            log.log("Suggest to use {0} as mindailyrate {1}% for {2}".format(analysis_method, recommended_min * 100, cur))
+            #cur_min_daily_rate = recommended_min
     return Decimal(cur_min_daily_rate)
 
 
