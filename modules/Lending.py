@@ -211,7 +211,7 @@ def cancel_all():
     loan_offers = api.return_open_loan_offers()
     available_balances = api.return_available_account_balances('lending')
     for CUR in loan_offers:
-        if CUR not in coin_cfg:
+        if CUR not in all_currencies:
             continue
         if CUR in coin_cfg and coin_cfg[CUR]['maxactive'] == 0:
             # don't cancel disabled coin
