@@ -50,7 +50,9 @@ last_lending_status = None
 
 # limit of orders to request
 loanOrdersRequestLimit = {}
-defaultLoanOrdersRequestLimit = 100
+defaultLoanOrdersRequestLimit = 5
+# FIXME: Make this configurable
+compete_rate = 0.00064
 
 
 def debug_log(msg):
@@ -175,12 +177,11 @@ def get_min_loan_size(currency):
     return Decimal(min_loan_sizes[currency])
 
 
-def create_lend_offer(currency, amt, rate):
-    days = '2'
+def create_lend_offer(currency, amt, rate, days='2'):
     if float(rate) > 0.0001:
         rate = float(rate) - 0.000001  # lend offer just bellow the competing one
     amt = "%.8f" % Decimal(amt)
-    if xday_threshold > 0:
+    if days == '2' and xday_threshold > 0:
         if float(rate) >= xday_threshold:
             days = xdays
         elif xday_spread and xday_spread > 0:
@@ -331,7 +332,7 @@ def get_min_daily_rate(cur):
     return Decimal(cur_min_daily_rate)
 
 
-def construct_order_book(active_cur):
+def construct_order_books(active_cur):
     # make sure we have a request limit for this currency
     if active_cur not in loanOrdersRequestLimit:
         loanOrdersRequestLimit[active_cur] = defaultLoanOrdersRequestLimit
@@ -340,14 +341,20 @@ def construct_order_book(active_cur):
     if len(loans) == 0:
         return False
 
-    rate_book = []
-    volume_book = []
-    for offer in loans['offers']:
-        rate_book.append(offer['rate'])
-        volume_book.append(offer['amount'])
-    resp = {'rates': rate_book, 'volumes': volume_book}
-    debug_log("Construct_order_book: " + str(resp))
-    return resp
+    resps = []
+    for load_type in ('demands', 'offers'):
+        rate_book = []
+        volume_book = []
+        rangeMax_book = []
+        for load in loans[load_type]:
+            rate_book.append(load['rate'])
+            volume_book.append(load['amount'])
+            rangeMax_book.append(load['rangeMax'])
+        resp = {'rates': rate_book, 'volumes': volume_book, 'rangeMax': rangeMax_book}
+        debug_log("construct %s: %s" % (load_type, str(resp)))
+        resps.append(resp)
+
+    return resps
 
 
 def get_gap_rate(active_cur, gap, order_book, cur_total_balance, raw=False):
@@ -376,7 +383,7 @@ def get_gap_rate(active_cur, gap, order_book, cur_total_balance, raw=False):
     i = 0
     while gap_sum < gap_expected:
         if i == len(order_book['volumes']) - 1 and len(order_book['volumes']) == loanOrdersRequestLimit[active_cur]:
-            loanOrdersRequestLimit[active_cur] += defaultLoanOrdersRequestLimit
+            #loanOrdersRequestLimit[active_cur] += defaultLoanOrdersRequestLimit
             log.log(active_cur + ': Not enough offers in response, adjusting request limit to ' + str(
                 loanOrdersRequestLimit[active_cur]))
             raise StopIteration
@@ -397,11 +404,14 @@ def get_cur_spread(spread, cur_active_bal, active_cur):
 
 def construct_orders(cur, cur_active_bal, cur_total_balance, ticker):
     cur_spread = get_cur_spread(spread_lend, cur_active_bal, cur)
-    top_rate, bottom_rate = get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker)
-    gap_diff = top_rate - bottom_rate
     if cur_spread == 1:
+        print('skip get_gap_mode_rates ...')
         rate_step = 0
+        bottom_rate = get_min_daily_rate(cur)
     else:
+        print('call get_gap_mode_rates ...')
+        top_rate, bottom_rate = get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker)
+        gap_diff = top_rate - bottom_rate
         rate_step = gap_diff / (cur_spread - 1)
 
     order_rates = []
@@ -427,6 +437,7 @@ def construct_orders(cur, cur_active_bal, cur_total_balance, ticker):
         new_order_amounts[0] += remainder
     resp = {'amounts': new_order_amounts, 'rates': new_order_rates}
     debug_log('Constructing orders: ' + str(resp))
+    print('Constructing orders: ' + str(resp))
     return resp
 
 
@@ -434,7 +445,7 @@ def get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker):
     global gap_mode_default, gap_bottom_default, gap_top_default  # To be able to change them later if needed.
     gap_mode, gap_bottom, gap_top = gap_mode_default, gap_bottom_default, gap_top_default
     use_gap_cfg = False
-    order_book = construct_order_book(cur)
+    _, order_book = construct_order_books(cur)
     if cur in coin_cfg:  # Get custom values specific to coin
         cfg = coin_cfg[cur]
         if cfg.get('gapmode', False) and cfg.get('gapbottom', False) and cfg.get('gaptop', False):
@@ -487,7 +498,8 @@ def lend_cur(active_cur, total_lent, lending_balances, ticker):
 
     # log total coin
     log.updateStatusValue(active_cur, "totalCoins", (Decimal(active_cur_total_balance)))
-    order_book = construct_order_book(active_cur)
+    demand_book, order_book = construct_order_books(active_cur)
+
     if not order_book or len(order_book['rates']) == 0 or not cur_min_daily_rate:
         return 0
 
@@ -513,8 +525,15 @@ def lend_cur(active_cur, total_lent, lending_balances, ticker):
         else:
             rate = orders['rates'][i]
 
+        days = '2'
+        # Check demand_book for competing offers
+        if demand_book and float(demand_book['rates'][0]) > compete_rate:
+            rate = demand_book['rates'][0]
+            days = str(demand_book['rangeMax'][0])
+            log.log("Competing offer found for " + active_cur + " at " + str(float(rate) * 100) + "% for " + days + " days.")
+
         try:
-            create_lend_offer(active_cur, orders['amounts'][i], rate)
+            create_lend_offer(active_cur, orders['amounts'][i], rate, days)
         except Exception as msg:
             if "Amount must be at least " in str(msg):
                 import re

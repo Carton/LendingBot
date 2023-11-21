@@ -15,6 +15,9 @@ all_currencies = STR,BTC,BTS,CLAM,DOGE,DASH,LTC,MAID,XMR,XRP,ETH,FCT,#BTG
 all_currencies = USD,BTC,BCH,ETH,XRP,IOT,XMR,LTC,OMG,ETC,EOS,DSH,ZEC,#BTG
 
 [BOT]
+#Debug mode, set to True to enable API related verbose debug messages in the console
+api_debug_log = False
+
 #Custom name of the bot, that will be displayed in html page
 label = Lending Bot
 
