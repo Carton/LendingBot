@@ -54,11 +54,11 @@ gaptop = 200
 #If set to 0 all offers will be placed for a 2 day period (0.003-5)
 # Poloniex max lending period: 60 days
 # Bitfinex max lending period: 120 days
-xdaythreshold = 0.2
-xdays = 60
-#When xdayspread is set, lending days will be incremented linear from 2 days at (xdaythreshold/xdayspread) lent rate
-#to (xdays) days at (xdaythreshold) lent rate. (0-10)
-#xdayspread = 2
+xdaythreshold = 0.050:20,0.058:30,0.060:45,0.063:60,0.070:120
+# These configs are not used any more
+#xdays = 30
+#xdayspread = 1.2
+
 
 #Auto-transfer of funds from exchange to lending balance.
 #Enter ALL to transfer all coins, enter ACTIVE to transfer any coins you have in your lending account when the bot starts, these can be mixed.

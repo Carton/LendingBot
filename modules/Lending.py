@@ -20,9 +20,7 @@ max_daily_rate = 0
 spread_lend = 0
 gap_bottom_default = 0
 gap_top_default = 0
-xday_threshold = 0
-xday_spread = 0
-xdays = 0
+xday_threshold = ""
 min_loan_size = 0
 min_loan_sizes = {}
 end_date = None
@@ -71,7 +69,7 @@ def init(cfg, api1, log1, data, maxtolend, dry_run1, analysis, notify_conf1):
     notify_conf = notify_conf1
 
     global sleep_time, sleep_time_active, sleep_time_inactive, min_daily_rate, max_daily_rate, spread_lend, \
-        gap_bottom_default, gap_top_default, xday_threshold, xday_spread, xdays, min_loan_size, end_date, coin_cfg, \
+        gap_bottom_default, gap_top_default, xday_threshold, min_loan_size, end_date, coin_cfg, \
         min_loan_sizes, dry_run, transferable_currencies, keep_stuck_orders, hide_coins, scheduler, gap_mode_default, \
         exchange, analysis_method, currencies_to_analyse, all_currencies, frrasmin, frrdelta_min
 
@@ -86,10 +84,8 @@ def init(cfg, api1, log1, data, maxtolend, dry_run1, analysis, notify_conf1):
     gap_mode_default = Config.get_gap_mode("BOT", "gapMode")
     gap_bottom_default = Decimal(Config.get("BOT", "gapbottom", None, 0))
     gap_top_default = Decimal(Config.get("BOT", "gaptop", None, gap_bottom_default))
-    xday_threshold = float(Config.get("BOT", "xdaythreshold", None, 0.003, 5)) / 100
-    xday_spread = float(Config.get('BOT', 'xdayspread', 0, 0, 10))
+    xday_threshold = Config.get("BOT", "xdaythreshold")
     maxPeriod = 120 if exchange == 'BITFINEX' else 60
-    xdays = str(Config.get("BOT", "xdays", None, 2, maxPeriod))
     min_loan_size = Decimal(Config.get("BOT", 'minloansize', None, 0.01))
     end_date = Config.get('BOT', 'endDate')
     coin_cfg = Config.get_coin_cfg()
@@ -176,19 +172,39 @@ def get_min_loan_size(currency):
         return min_loan_size
     return Decimal(min_loan_sizes[currency])
 
+# parse config like "0.050:25,0.058:30,0.060:45,0.064:60,0.070:120", i.e. rate:days pairs,
+# and return the rates, days list
+def parse_xday_threshold(xday_threshold):
+    rates = []
+    xdays = []
+    if xday_threshold:
+        for pair in xday_threshold.split(','):
+            rate, day = pair.split(':')
+            rates.append(float(rate) / 100)
+            xdays.append(day)
+    return rates, xdays
 
 def create_lend_offer(currency, amt, rate, days='2'):
     if float(rate) > 0.0001:
         rate = float(rate) - 0.000001  # lend offer just bellow the competing one
     amt = "%.8f" % Decimal(amt)
-    if days == '2' and xday_threshold > 0:
-        if float(rate) >= xday_threshold:
-            days = xdays
-        elif xday_spread and xday_spread > 0:
-            xday_threshold_min = xday_threshold / xday_spread
-            if float(rate) > xday_threshold_min:
-                m = (float(xdays) - 2) / (xday_threshold - xday_threshold_min)
-                days = str(int(round(m * (float(rate) - xday_threshold_min) + 2)))
+    rates, xdays = parse_xday_threshold(xday_threshold)
+    if days == '2' and len(rates) > 0:
+        # map rate to xdays, use intepolation if rate is not in the list
+        if float(rate) < rates[0]:
+            days = xdays[0]
+        else:
+            for i in range(len(rates)):
+                if float(rate) <= rates[i]:
+                    # linear interpolation
+                    days = str(int(xdays[i - 1]) + int((int(xdays[i]) - int(xdays[i - 1])) * (float(rate) - rates[i - 1]) /
+                        (rates[i] - rates[i - 1])))
+                    break
+            else:
+                # If rate is greater than the last rate, use the last xdays
+                days = xdays[-1]
+        print "Using xday threshold: rate={0}, days={1}".format(rate, days)
+
     if Config.has_option('BOT', 'endDate'):
         days_remaining = int(Data.get_max_duration(end_date, "order"))
         if int(days_remaining) <= 2:
@@ -202,7 +218,7 @@ def create_lend_offer(currency, amt, rate, days='2'):
             days = str(days_remaining)
     if not dry_run:
         msg = api.create_loan_offer(currency, amt, days, 0, rate)
-        if days == xdays and notify_conf['notify_xday_threshold']:
+        if days == xdays[-1] and notify_conf['notify_xday_threshold']:
             text = "{0} {1} loan placed for {2} days at a rate of {3:.4f}%".format(amt, currency, days, rate * 100)
             log.notify(text, notify_conf)
         log.offer(amt, currency, rate, days, msg)
@@ -407,7 +423,7 @@ def construct_orders(cur, cur_active_bal, cur_total_balance, ticker):
     if cur_spread == 1:
         print('skip get_gap_mode_rates ...')
         rate_step = 0
-        bottom_rate = get_min_daily_rate(cur)
+        bottom_rate = 0
     else:
         print('call get_gap_mode_rates ...')
         top_rate, bottom_rate = get_gap_mode_rates(cur, cur_active_bal, cur_total_balance, ticker)
@@ -437,7 +453,6 @@ def construct_orders(cur, cur_active_bal, cur_total_balance, ticker):
         new_order_amounts[0] += remainder
     resp = {'amounts': new_order_amounts, 'rates': new_order_rates}
     debug_log('Constructing orders: ' + str(resp))
-    print('Constructing orders: ' + str(resp))
     return resp
 
 
