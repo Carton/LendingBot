@@ -325,6 +325,7 @@ def get_frr_or_min_daily_rate(cur):
             log.log("Using FRR as mindailyrate {:.6f}% for {}".format(frr_rate * 100, cur))
             return frr_rate
 
+    log.log("Using min_daily_rate {:.6f}% for {}".format(min_daily_rate * 100, cur))
     return min_daily_rate
 
 
