@@ -396,6 +396,10 @@ function loadSettings() {
     // frrdelta_min
     var frrdelta_min = localStorage.getItem('frrdelta_min') || 0.00001;
     $('#frrdelta_min').val(frrdelta_min);
+
+    // frrdelta_max
+    var frrdelta_max = localStorage.getItem('frrdelta_max') || 0.00001;
+    $('#frrdelta_max').val(frrdelta_max);
 }
 
 function doSave() {
@@ -442,7 +446,17 @@ function doSave() {
         return false
     }
     localStorage.setItem('frrdelta_min', frrdelta_min);
-    setConfig({ "frrdelta_min": frrdelta_min });
+
+    var frrdelta_max = $('#frrdelta_max').val()
+    if(frrdelta_max < frrdelta_min || frrdelta_max > 0.003) {
+        alert('Please input a value between frrdelta_min and 0.003 for frrdelta_max')
+        return false
+    }
+    localStorage.setItem('frrdelta_max', frrdelta_max);
+    setConfig({
+        "frrdelta_min": frrdelta_min,
+        "frrdelta_max": frrdelta_max
+    });
 
     toastr.success("Settings saved!");
     $('#settings_modal').modal('hide');

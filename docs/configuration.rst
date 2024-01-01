@@ -104,9 +104,9 @@ Min and Max Rates
     - This will only be used if the frr is above your ``mindailyrate``. So which ever is highest at the time of the loan will be used.
     - This options only works on Bitfinex.
 
-- ``frrdelta`` tells the bot whether or not to use the `flash return rate <https://support.bitfinex.com/hc/en-us/articles/115003284729-What-is-the-FRR-Delta->`
-    - Default value: 0.0000
-    - Allowed range: 0.0000 -/+ 7   
+- ``frrdelta_min`` and ``frrdelta_max`` are the delta range based on the `flash return rate <https://support.bitfinex.com/hc/en-us/articles/115003284729-What-is-the-FRR-Delta->`
+    - Default value: 0.0000/0.00008
+    - Allowed range: 
     - This will only be used if the frr is above your ``mindailyrate``. So which ever is highest at the time of the loan will be used.
     - This options only works on Bitfinex.
 
@@ -302,7 +302,8 @@ Configuration should look like this::
     gapbottom = 10
     gaptop = 20
     frrasmin = true
-    frrdelta = 0.000000
+    frrdelta_min = 0.00000
+    frrdelta_max = 0.00008
 
 
 Advanced logging and Web Display

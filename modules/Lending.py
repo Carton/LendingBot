@@ -38,10 +38,10 @@ gap_mode_default = ""
 scheduler = None
 exchange = None
 frrasmin = False
-frrdelta = 0.0
 
 frrdelta_cur_step = 0
 frrdelta_min = 0.0
+frrdelta_max = 0.0
 debug_on = False
 lending_paused = False
 last_lending_status = None
@@ -71,7 +71,7 @@ def init(cfg, api1, log1, data, maxtolend, dry_run1, analysis, notify_conf1):
     global sleep_time, sleep_time_active, sleep_time_inactive, min_daily_rate, max_daily_rate, spread_lend, \
         gap_bottom_default, gap_top_default, xday_threshold, min_loan_size, end_date, coin_cfg, \
         min_loan_sizes, dry_run, transferable_currencies, keep_stuck_orders, hide_coins, scheduler, gap_mode_default, \
-        exchange, analysis_method, currencies_to_analyse, all_currencies, frrasmin, frrdelta_min
+        exchange, analysis_method, currencies_to_analyse, all_currencies, frrasmin, frrdelta_min, frrdelta_max
 
     exchange = Config.get_exchange()
 
@@ -97,7 +97,8 @@ def init(cfg, api1, log1, data, maxtolend, dry_run1, analysis, notify_conf1):
     keep_stuck_orders = Config.getboolean('BOT', "keepstuckorders", True)
     hide_coins = Config.getboolean('BOT', 'hideCoins', True)
     frrasmin = Config.getboolean('BOT', 'frrasmin', False)
-    frrdelta_min = Decimal(Config.get('BOT', 'frrdelta', 0.0000))
+    frrdelta_min = Decimal(Config.get('BOT', 'frrdelta_min', 0.0000))
+    frrdelta_max = Decimal(Config.get('BOT', 'frrdelta_max', 0.00008))
     analysis_method = Config.get('Daily_min', 'method', 'percentile')
     if analysis_method not in ['percentile', 'MACD']:
         raise ValueError("analysis_method: \"{0}\" is not valid, must be percentile or MACD".format(analysis_method))
@@ -296,17 +297,22 @@ def get_frr_or_min_daily_rate(cur):
     :return: The better of the two rates (FRR and min daily rate)
     """
     global frrdelta_cur_step
-    global frrdelta_min
+    global frrdelta_min, frrdelta_max
     if cur in coin_cfg:
         min_daily_rate = Decimal(coin_cfg[cur]['minrate'])
         frrasmin = coin_cfg[cur]['frrasmin']
-        frrdelta_min = Decimal(coin_cfg[cur]['frrdelta']) / 100
+        frrdelta_min = Decimal(coin_cfg[cur]['frrdelta_min']) / 100
+        frrdelta_max = Decimal(coin_cfg[cur]['frrdelta_max']) / 100
     else:
         min_daily_rate = Decimal(Config.get("BOT", "mindailyrate", None, 0.003, 5)) / 100
         frrasmin = Config.getboolean('BOT', 'frrasmin', False)
 
-    frrdelta_steps = int(Config.get('BOT', 'frrdelta_steps', 5))
-    frrdelta_step = Decimal(Config.get('BOT', 'frrdelta_step', 0.0001))
+    if frrdelta_min > frrdelta_max:
+        frrdelta_min, frrdelta_max = frrdelta_max, frrdelta_min
+    # Let's use hard coded steps for now
+    frrdelta_steps = 5
+    frrdelta_step = (frrdelta_max - frrdelta_min) / frrdelta_steps
+
     if frrdelta_cur_step > frrdelta_steps:
         frrdelta_cur_step = 0
     frrdelta = frrdelta_min + (frrdelta_step * frrdelta_cur_step)

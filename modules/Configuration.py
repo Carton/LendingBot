@@ -106,7 +106,8 @@ def get_coin_cfg():
                 coin_cfg[cur]['gapbottom'] = Decimal(get(cur, 'gapbottom', False, 0))
                 coin_cfg[cur]['gaptop'] = Decimal(get(cur, 'gaptop', False, coin_cfg[cur]['gapbottom']))
                 coin_cfg[cur]['frrasmin'] = getboolean(cur, 'frrasmin', getboolean('BOT', 'frrasmin'))
-                coin_cfg[cur]['frrdelta'] = Decimal(get(cur, 'frrdelta', 0.0000))
+                coin_cfg[cur]['frrdelta_min'] = Decimal(get(cur, 'frrdelta_min', 0.0000))
+                coin_cfg[cur]['frrdelta_max'] = Decimal(get(cur, 'frrdelta_max', 0.00008))
 
             except Exception as ex:
                 ex.message = ex.message if ex.message else str(ex)

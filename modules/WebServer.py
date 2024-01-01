@@ -102,10 +102,11 @@ def start_web_server():
                     config_data = json.loads(post_data)
 
                     # 更新配置值
-                    if 'frrdelta_min' in config_data:
+                    if 'frrdelta_min' in config_data and 'frrdelta_max' in config_data:
                         try:
                             Lending.frrdelta_min = Decimal(config_data['frrdelta_min'])
-                            response = {"success": True, "frrdelta_min": str(Lending.frrdelta_min)}
+                            Lending.frrdelta_max = Decimal(config_data['frrdelta_max'])
+                            response = {"success": True, "frrdelta_min": str(Lending.frrdelta_min), "frrdelta_max": str(Lending.frrdelta_max)}
                         except (ValueError, TypeError, InvalidOperation) as e:
                             response = {"success": False, "error": str(e)}
                     else:
