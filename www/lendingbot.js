@@ -440,19 +440,20 @@ function doSave() {
         effRateMode = localStorage.effRateMode;
     }
 
-    var frrdelta_min = $('#frrdelta_min').val()
+    var frrdelta_min = parseFloat($('#frrdelta_min').val());
     if(frrdelta_min < -0.003 || frrdelta_min > 0.003) {
-        alert('Please input a value between -0.003 and 0.003 for frrdelta_min')
-        return false
+        alert('Please input a value between -0.003 and 0.003 for frrdelta_min');
+        return false;
     }
-    localStorage.setItem('frrdelta_min', frrdelta_min);
+    localStorage.setItem('frrdelta_min', frrdelta_min.toString());
 
-    var frrdelta_max = $('#frrdelta_max').val()
+    var frrdelta_max = parseFloat($('#frrdelta_max').val());
     if(frrdelta_max < frrdelta_min || frrdelta_max > 0.003) {
-        alert('Please input a value between frrdelta_min and 0.003 for frrdelta_max')
-        return false
+        alert('Please input a value between frrdelta_min and 0.003 for frrdelta_max');
+        return false;
     }
-    localStorage.setItem('frrdelta_max', frrdelta_max);
+    localStorage.setItem('frrdelta_max', frrdelta_max.toString());
+
     setConfig({
         "frrdelta_min": frrdelta_min,
         "frrdelta_max": frrdelta_max
